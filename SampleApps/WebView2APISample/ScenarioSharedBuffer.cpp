@@ -193,12 +193,10 @@ void ScenarioSharedBuffer::WebViewMessageReceived(
         sharedBuffer->Close();
         //! [OneTimeShareBuffer]
     }
-    else if (message == L"RequestAnImage")
+    else if (message == L"RequestLargeData")
     {
         //! [LiveImageTest]
-        const int width = 640;
-        const int height = 480;
-        const size_t bufferSize = width * height * 4;
+        const size_t bufferSize = 640 * 480 * 4;
         wil::com_ptr<ICoreWebView2Environment12> environment;
         CHECK_FAILURE(m_appWindow->GetWebViewEnvironment()->QueryInterface(IID_PPV_ARGS(&environment)));
 
@@ -207,33 +205,12 @@ void ScenarioSharedBuffer::WebViewMessageReceived(
         // Set data into the shared memory via get_Buffer
         BYTE* buffer = nullptr;
         CHECK_FAILURE(sharedBuffer->get_Buffer(&buffer));
-        auto SetPixelData = [=](BYTE* buffer)
-        {
-            memset(buffer, 0, bufferSize);
-            // Draw red horizontal line
-            size_t ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-            const double t = static_cast<double>(ms % 1000) / 1000;
-            const int h = (height - 1) * t;
-            BYTE* cur = buffer + h * width * 4;
-            for (int w = 0; w < width; ++w)
-            {
-                *cur++ = 255;
-                *cur++ = 0;
-                *cur++ = 0;
-                *cur++ = 255;
-            }
-        };
-        SetPixelData(buffer);
+        memset(buffer, 0, bufferSize);
 
-        PCWSTR additionalDataAsJson = L"{\"myBufferType\":\"bufferTypeImage\"}";
+        PCWSTR additionalDataAsJson = L"{\"myBufferType\":\"bufferTypeLargeData\"}";
         m_webView17->PostSharedBufferToScript(
             sharedBuffer.get(), COREWEBVIEW2_SHARED_BUFFER_ACCESS_READ_ONLY,
             additionalDataAsJson);
-
-        static int s_count = 0;
-        std::wostringstream ost;
-        ost << L"Post image: " << s_count++ << L"\n";
-        OutputDebugString(ost.str().c_str());
         //! [LiveImageTest]
     }
     else

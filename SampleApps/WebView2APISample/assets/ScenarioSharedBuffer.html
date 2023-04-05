@@ -30,17 +30,14 @@
                 new TextDecoder().decode(new Uint8Array(buffer));
         }
 
-        let receivedImageCount = 0;
+        let receivedDataCount = 0;
         function SharedBufferReceived(e) {
             if (e.additionalData && e.additionalData.myBufferType == "bufferType1") {
                 readOnlySharedBuffer = e.getBuffer();
-            } else if (e.additionalData && e.additionalData.myBufferType == "bufferTypeImage") {
-                document.getElementById("receivedImageCount").innerText = String(receivedImageCount++);
-                if (document.getElementById("isShowImage").checked) {
-                    DrawImage(e.getBuffer());
-                }
+            } else if (e.additionalData && e.additionalData.myBufferType == "bufferTypeLargeData") {
+                document.getElementById("receivedDataCount").innerText = String(receivedDataCount++);
                 ReleaseBuffer(e.getBuffer());
-                chrome.webview.postMessage("RequestAnImage");
+                chrome.webview.postMessage("RequestLargeData"); // Request next data
                 return;
             } else {
                 sharedBuffer = e.getBuffer();
@@ -72,8 +69,8 @@
           window.chrome.webview.postMessage("SharedBufferDataUpdated");
         }
 
-        function StartLiveImageStreaming() {
-            chrome.webview.postMessage("RequestAnImage");
+        function StartSendingLargeData() {
+            chrome.webview.postMessage("RequestLargeData");
         }
 
         function createIFrame() {
@@ -137,9 +134,8 @@
         <button onclick="UpdateSharedBufferData(readOnlySharedBuffer)">Update Data in read only shared buffer (renderer process will crash unless buffer is released)</button><br>
         <textarea id="shared-buffer-data"></textarea>
         <br />
-        <button onclick="StartLiveImageStreaming()">Start live image streaming</button> <input type="checkbox" id="isShowImage" checked/><label>Show received image</label><br />
-        <label>received count:</label><label id="receivedImageCount">0</label><br>
-        <canvas id="imageCanvas" width="640" height="480"></canvas>
+        <button onclick="StartSendingLargeData()">Start sending large data</button><br />
+        <label>received data count:</label><label id="receivedDataCount">0</label><br>
     </div>
 
     <div id="div-iframe" style="display: none;">
