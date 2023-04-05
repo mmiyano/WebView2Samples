@@ -30,9 +30,18 @@
                 new TextDecoder().decode(new Uint8Array(buffer));
         }
 
+        let receivedImageCount = 0;
         function SharedBufferReceived(e) {
             if (e.additionalData && e.additionalData.myBufferType == "bufferType1") {
                 readOnlySharedBuffer = e.getBuffer();
+            } else if (e.additionalData && e.additionalData.myBufferType == "bufferTypeImage") {
+                document.getElementById("receivedImageCount").innerText = String(receivedImageCount++);
+                if (document.getElementById("isShowImage").checked) {
+                    DrawImage(e.getBuffer());
+                }
+                ReleaseBuffer(e.getBuffer());
+                chrome.webview.postMessage("RequestAnImage");
+                return;
             } else {
                 sharedBuffer = e.getBuffer();
             }
@@ -42,6 +51,15 @@
         function ReleaseBuffer(buffer) {
           window.chrome.webview.releaseBuffer(buffer);
         }
+
+        function DrawImage(buffer) {
+            let canvas = document.getElementById("imageCanvas");
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                ctx.putImageData(new ImageData(new Uint8ClampedArray(buffer), 640, 480), 0, 0);
+            }
+        }
+
         //! [ShareBufferScriptCode_2]
 
         function UpdateSharedBufferData(buffer) {
@@ -52,6 +70,10 @@
           sharedArray.set(data.subarray(0, buffer.byteLength));
           // notify the app that data has been set.
           window.chrome.webview.postMessage("SharedBufferDataUpdated");
+        }
+
+        function StartLiveImageStreaming() {
+            chrome.webview.postMessage("RequestAnImage");
         }
 
         function createIFrame() {
@@ -114,6 +136,10 @@
         <button onclick="UpdateSharedBufferData(sharedBuffer)">Update data in shared buffer</button><br>
         <button onclick="UpdateSharedBufferData(readOnlySharedBuffer)">Update Data in read only shared buffer (renderer process will crash unless buffer is released)</button><br>
         <textarea id="shared-buffer-data"></textarea>
+        <br />
+        <button onclick="StartLiveImageStreaming()">Start live image streaming</button> <input type="checkbox" id="isShowImage" checked/><label>Show received image</label><br />
+        <label>received count:</label><label id="receivedImageCount">0</label><br>
+        <canvas id="imageCanvas" width="640" height="480"></canvas>
     </div>
 
     <div id="div-iframe" style="display: none;">
